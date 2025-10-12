@@ -6,11 +6,12 @@ A simple coursework website for professors and students.
 - Prisma
 - GraphQL
 - Vue.js
+- TypeScript
 - TailwindCSS
 
 ## Commands
-- Move to `server` folder and run `npx ts-node src/index.ts`
-- Move to `client` folder and run `npm run dev`
+- Move to `server` folder and run `npx ts-node src/index.ts` to start the backend
+- Move to `client` folder and run `npm run dev` to start the frontend
 
 ## Current Work
 - Stopped at displaying skills on each student in their profile page.
