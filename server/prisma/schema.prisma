@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model courses {
+  cid        Int        @id(map: "course_pkey") @default(autoincrement())
+  ctitle     String     @db.VarChar(150)
+  pid        Int
+  professors professors @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: NoAction, map: "fk_professor")
+  enrolled   enrolled[]
+  teams      teams[]
+}
+
+model enrolled {
+  eid      Int      @id @default(autoincrement())
+  sid      Int
+  cid      Int
+  courses  courses  @relation(fields: [cid], references: [cid], onDelete: Cascade, onUpdate: NoAction, map: "fk_course")
+  students students @relation(fields: [sid], references: [sid], onDelete: Cascade, onUpdate: NoAction, map: "fk_student")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model professors {
+  pid     Int       @id(map: "professor_pkey") @default(autoincrement())
+  pname   String    @db.VarChar(100)
+  pemail  String    @unique(map: "professor_pemail_key") @db.VarChar(100)
+  ppass   String    @db.VarChar(100)
+  courses courses[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model students {
+  sid           Int             @id @default(autoincrement())
+  sname         String          @db.VarChar(100)
+  gender        String          @db.Char(7)
+  semail        String          @unique @db.VarChar(100)
+  spass         String          @db.VarChar(100)
+  enrolled      enrolled[]
+  studentskills studentskills[]
+  teampeople    teampeople[]
+}
+
+model skillset {
+  skid          Int             @id @default(autoincrement())
+  skname        String          @unique @db.VarChar(100)
+  studentskills studentskills[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model studentskills {
+  ssid     Int      @id @default(autoincrement())
+  sid      Int
+  skid     Int
+  levels   Int?
+  students students @relation(fields: [sid], references: [sid], onDelete: Cascade, onUpdate: NoAction)
+  skillset skillset @relation(fields: [skid], references: [skid], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([sid, skid])
+}
+
+model teampeople {
+  tpid     Int      @id @default(autoincrement())
+  tid      Int
+  sid      Int
+  students students @relation(fields: [sid], references: [sid], onDelete: Cascade, onUpdate: NoAction)
+  teams    teams    @relation(fields: [tid], references: [tid], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tid, sid])
+}
+
+model teams {
+  tid        Int          @id @default(autoincrement())
+  cid        Int
+  teampeople teampeople[]
+  courses    courses      @relation(fields: [cid], references: [cid], onDelete: Cascade, onUpdate: NoAction)
+}

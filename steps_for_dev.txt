@@ -1,0 +1,42 @@
+created a new user in PostgreSQL
+created a new database named devteams
+created all relations required and inserted data
+
+created a new folder called devteams_website
+created a new sub folder called server
+shifted to server folder
+
+prisma is a database mapping tool and can be used for better interactions with database via API like structures
+installed prisma as devDependency - as they are not required at the production level
+installed prisma/client dependency
+run prisma using npx as it stands for node execution and not management
+changed the postgressql database url in the .env file after the prisma was initiated
+use npx prisma db pull to attach the database to prisma schema
+generated the prisma client to make a bridge for communication
+there will be a generated folder created
+
+npm install typescript @types/node --save-dev ts-node
+@types/node is used to help typescript with node.js and ts-node to compile and run ts files faster
+now create a folder src and index.ts inside that folder
+import PrismaClient from the ../generated/prisma
+create a new prismaclient and a function to check if tables values can extracted using findMany()
+to run and check if it works, first change the following in tsconfig.json
+change type to commonjs
+comment the line verbatimmodulesyntax: true
+then run the command: npx ts-node src/index.ts
+
+next install apollo-server graphql in the server folder
+create 2 files in src as schema.ts and resolvers.ts
+under schema.ts import gql from apollo-server and export a typDefs const as string with ``
+inside the string we define a Student structure and what Query we want
+in the resolvers file: we should resolve the queries asked in the schema file
+so in the students query return all the students values using prisma findMany
+in the index.ts clear all content
+import typDefs and resolver and apolloserver
+have a main or start function async
+inside: create a new ApolloServer with parameters typeDefs and resolvers
+listen to the server and extract the url and just console log url to check if its running
+
+
+
+
