@@ -25,3 +25,10 @@ Professor Login\
 Email: `patrick.osullivan@prof.univ.edu`\
 Password: `Patrick*654`
 
+## Screenshots
+![one](./screenshots/one.jpeg)
+![two](./screenshots/two.jpeg)
+![three](./screenshots/three.jpeg)
+![four](./screenshots/four.jpeg)
+![five](./screenshots/five.jpeg)
+![six](./screenshots/six.jpeg)
