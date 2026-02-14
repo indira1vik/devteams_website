@@ -17,9 +17,6 @@ A simple team formation website for professors and students.
 ## Commands for Docker
 - Open project and enter `docker compose -d --build`
 
-## Current Work
-- Stopped at displaying skills on each student in their profile page.
-
 ## Sample Login Creds
 Student Login\
 Email: `neha.gupta@univ.edu`\
