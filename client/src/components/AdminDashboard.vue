@@ -13,7 +13,7 @@ const GET_ADMIN_DATA = gql`
   }
 `
 
-const { result: adminData, loading, error } = useQuery(GET_ADMIN_DATA)
+const { result: adminData } = useQuery(GET_ADMIN_DATA)
 
 </script>
 <template>

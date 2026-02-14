@@ -8,4 +8,10 @@ export default defineConfig({
     vue(),
     tailwindcss()
   ],
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'esbuild',
+  },
+  base: '/',
 })

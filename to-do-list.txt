@@ -1,4 +1,4 @@
-- dockerize server and client and try running
+- dockerize server and client and try running - done
 - try jenkins here
 - add new algorithm for the group formation based on
     - group size
