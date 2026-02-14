@@ -1,5 +1,5 @@
 # Dev teams UnivPortal
-A simple coursework website for professors and students.
+A simple team formation website for professors and students.
 
 ## Tech-Stack
 - PostgreSQL
@@ -9,9 +9,13 @@ A simple coursework website for professors and students.
 - TypeScript
 - TailwindCSS
 
-## Commands
-- Move to `server` folder and run `npx ts-node src/index.ts` to start the backend
-- Move to `client` folder and run `npm run dev` to start the frontend
+## Commands for localhost
+- Move to `client` folder and run `serve -s dist -l 5173` to start the backend
+- Move to `server` folder and run `node dist/index.js` to start the frontend
+- And change the DATABASE URL in the `.env` in the server folder for setting up the localhost
+
+## Commands for Docker
+- Open project and enter `docker compose -d --build`
 
 ## Current Work
 - Stopped at displaying skills on each student in their profile page.
@@ -24,6 +28,10 @@ Password: `Neha%919`
 Professor Login\
 Email: `patrick.osullivan@prof.univ.edu`\
 Password: `Patrick*654`
+
+Admin Login\
+Email: `revi@admin.univ.edu`\
+Password: `revi@1`
 
 ## Screenshots
 ![one](./screenshots/one.jpeg)
