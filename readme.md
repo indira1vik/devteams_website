@@ -32,3 +32,5 @@ Password: `Patrick*654`
 ![four](./screenshots/four.jpeg)
 ![five](./screenshots/five.jpeg)
 ![six](./screenshots/six.jpeg)
+![seven](./screenshots/seven.jpeg)
+![eight](./screenshots/eight.jpeg)
