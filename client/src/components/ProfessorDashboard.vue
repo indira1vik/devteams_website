@@ -2,11 +2,10 @@
 import { useQuery } from '@vue/apollo-composable';
 import gql from 'graphql-tag';
 import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
-const props = defineProps<{
-    pid: string
-}>();
-const pidVal = props.pid;
+const route = useRoute();
+const pidVal = route.params.pid as string;
 
 const GET_COURSES_LIST = gql`
 query GetOneProfessor($pid: ID!) {

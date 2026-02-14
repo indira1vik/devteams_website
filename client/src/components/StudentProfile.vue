@@ -3,12 +3,10 @@
 import gql from 'graphql-tag';
 import { useQuery, useMutation } from '@vue/apollo-composable';
 import { ref } from 'vue';
+import { useRoute } from 'vue-router';
 
-const props = defineProps<{
-    sid: string
-}>();
-
-const sidVal = props.sid;
+const route = useRoute();
+const sidVal = route.params.sid as string;
 
 const GET_STUDENTS_DETAILS = gql`
     query Arguments($sid: ID!) {

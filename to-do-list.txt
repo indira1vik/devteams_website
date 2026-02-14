@@ -1,0 +1,8 @@
+- dockerize server and client and try running
+- try jenkins here
+- add new algorithm for the group formation based on
+    - group size
+    - gender
+    - each student skills
+- check about login and security
+- if possible add forms for admins to add users

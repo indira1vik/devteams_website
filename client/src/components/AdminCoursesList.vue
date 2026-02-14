@@ -1,54 +1,42 @@
 <script setup lang="ts">
-
 import gql from 'graphql-tag';
 import { useQuery } from '@vue/apollo-composable';
-import { useRoute } from 'vue-router';
 
-const route = useRoute();
-const cid = route.params.cid as string;
-
-const GET_TEAMS = gql`
-    query GetTeams($cid: ID!) {
-        getOneCourse(cid: $cid) {
-            teams {
-                tid
-                tname
-                teampeople {
-                    student {
-                        sid
-                        sname
-                        semail
-                        gender
-                    }
-                }
-            }
-        }
+const GET_COURSES_LIST = gql`
+query GetAllCourses {
+  getAllCourses {
+    cid
+    ctitle
+    enrolled {
+      student {
+        sid
+      }
     }
+    professor {
+      pname
+    }
+  }
+}
 `;
 
-const { result: getCourseGroupsList, loading, error } = useQuery(GET_TEAMS, { cid: cid });
-
-function genderClasses(gender: string) {
-  const g = gender.trim();
-  if (g === 'Male') return 'text-orange-500 bg-orange-100/60';
-  else if (g === 'Female') return 'text-emerald-500 bg-emerald-100/60';
-  else if (g === 'Other') return 'text-purple-500 bg-purple-100/60';
-  return 'text-gray-500 bg-gray-100/60';
-}
+const { result: getCoursesList, loading, error } = useQuery(GET_COURSES_LIST);
 
 </script>
 
 <template>
-    <div>
-        <div v-if="loading">Loading...</div>
-        <div v-else-if="error">{{ error.message }}</div>
-        <div v-else>
-            <section class="container px-4 mx-auto">
-            <div class="flex flex-col mt-6">
+    <div v-if="loading">
+        <h1>Loading...</h1>
+    </div>
+    <div v-else-if="error">
+        <h1>Error: {{ error }}</h1>
+    </div>
+    <div v-else class="w-full mb-10 mt-10">
+        <h1 class="text-xl font-medium text-center text-gray-800">Courses List</h1>
+        <section class="container mx-auto mt-6">
+            <div class="flex flex-col mt-3">
                 <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-                        <div v-for="team in getCourseGroupsList?.getOneCourse?.teams" :key="team.tid" class="overflow-hidden border border-gray-200 md:rounded-lg mb-6">
-                            <h3 class="bg-blue-50 px-4 py-3 text-lg font-medium text-gray-900">{{ team.tname }}</h3>
+                        <div class="overflow-hidden border border-gray-200 md:rounded-lg">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
@@ -60,23 +48,22 @@ function genderClasses(gender: string) {
                                             class="px-4 py-3.5 text-sm font-normal text-left rtl:text-right text-gray-500">
                                             ID Number
                                         </th>
-
                                         <th scope="col"
                                             class="px-4 py-3.5 text-sm font-normal text-left rtl:text-right text-gray-500">
-                                            Student Name
+                                            Course Title
                                         </th>
-
                                         <th scope="col"
                                             class="px-4 py-3.5 text-sm font-normal text-left rtl:text-right text-gray-500">
-                                            Student Email</th>
-
+                                            Enrolled Students
+                                        </th>
                                         <th scope="col"
                                             class="px-4 py-3.5 text-sm font-normal text-left rtl:text-right text-gray-500">
-                                            Gender</th>
+                                            Professor
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr v-for="(member, index) in team.teampeople" :key="member.student.sid">
+                                    <tr v-for="(course, index) in getCoursesList.getAllCourses">
                                         <td class="px-4 py-4 text-sm whitespace-nowrap">
                                             <div>
                                                 <h4 class="text-gray-700">{{ index + 1 }}</h4>
@@ -84,22 +71,22 @@ function genderClasses(gender: string) {
                                         </td>
                                         <td class="px-4 py-4 text-sm whitespace-nowrap">
                                             <div>
-                                                <h4 class="text-gray-700">{{ member.student.sid }}</h4>
+                                                <h4 class="text-gray-700">{{ course.cid }}</h4>
                                             </div>
                                         </td>
                                         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
                                             <div>
-                                                <h2 class="font-medium text-gray-800">{{ member.student.sname }}</h2>
+                                                <h2 class="font-medium text-gray-800">{{ course.ctitle }}</h2>
                                             </div>
                                         </td>
                                         <td class="px-4 py-4 text-sm whitespace-nowrap">
                                             <div>
-                                                <h4 class="text-gray-700">{{ member.student.semail }}</h4>
+                                                <h4 class="text-gray-700">{{ course.enrolled.length || 0 }}</h4>
                                             </div>
                                         </td>
-                                        <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
-                                            <div class="inline px-3 py-1 text-sm font-normal rounded-full" :class="genderClasses(member.student.gender)">
-                                                {{ member.student.gender }}
+                                        <td class="px-4 py-4 text-sm whitespace-nowrap">
+                                            <div>
+                                                <h4 class="text-gray-700">{{ course.professor.pname }}</h4>
                                             </div>
                                         </td>
                                     </tr>
@@ -110,6 +97,5 @@ function genderClasses(gender: string) {
                 </div>
             </div>
         </section>
-        </div>
     </div>
 </template>

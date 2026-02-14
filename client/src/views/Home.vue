@@ -26,8 +26,7 @@ function toLoginPage(role: Role) {
           <h2 class="text-2xl font-bold tracking-tight text-gray-800 xl:text-3xl mt-2">
             Welcome to Dev UnivPortal
           </h2>
-          <p class="block max-w-4xl mt-4 text-gray-500"> A website for students and professors to access their
-            coursework.
+          <p class="block max-w-4xl mt-4 text-gray-500"> A website for students and professors to check out their teams.
           </p>
           <div class="mt-6">
             <button @click="toLoginPage('student')"

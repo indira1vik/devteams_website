@@ -1,5 +1,4 @@
-import { pid } from "process";
-import { courses, enrolled, PrismaClient, professors, skillset, students, studentskills, teampeople, teams } from "../generated/prisma";
+import { courses, enrolled, PrismaClient, professors, skillset, students, admins, studentskills, teampeople, teams } from "../generated/prisma";
 import * as bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -8,6 +7,7 @@ export const resolvers = {
     Query: {
         getAllStudents: () => prisma.students.findMany(),
         getAllProfessors: () => prisma.professors.findMany(),
+        getAllAdmins: () => prisma.admins.findMany(),
         getAllCourses: () => prisma.courses.findMany(),
         getAllEnrolled: () => prisma.enrolled.findMany(),
         getAllSkillSets: () => prisma.skillset.findMany(),
@@ -17,6 +17,7 @@ export const resolvers = {
 
         getOneStudent: (_: any, args: any) => prisma.students.findUnique({ where: { sid: parseInt(args.sid, 10) } }),
         getOneProfessor: (_: any, args: any) => prisma.professors.findUnique({ where: { pid: parseInt(args.pid, 10) } }),
+        getOneAdmin: (_: any, args: any) => prisma.admins.findUnique({ where: { aid: parseInt(args.aid, 10) } }),
         getOneCourse: (_: any, args: any) => prisma.courses.findUnique({ where: { cid: parseInt(args.cid, 10) } }),
         getOneEnrolled: (_: any, args: any) => prisma.enrolled.findUnique({ where: { eid: parseInt(args.eid, 10) } }),
         getOneSkillSet: (_: any, args: any) => prisma.skillset.findUnique({ where: { skid: parseInt(args.skid, 10) } }),
@@ -41,6 +42,15 @@ export const resolvers = {
                     pname: input.pname,
                     pemail: input.pemail,
                     ppass: input.ppass
+                }
+            })
+        },
+        addAdmin: (_: any, { input }: any) => {
+            return prisma.admins.create({
+                data: {
+                    aname: input.aname,
+                    aemail: input.aemail,
+                    apass: input.apass
                 }
             })
         },
@@ -144,6 +154,106 @@ export const resolvers = {
                 message: "Right credentials",
                 pid: professor.pid
             };
+        },
+        loginAdmin: async (_: any, { input }: any) => {
+            const admin = await prisma.admins.findUnique({
+                where: { aemail: input.aemail }
+            });
+
+            if (!admin) return {
+                success: false,
+                message: "Email not found",
+                aid: null
+            };
+
+            const validPass = await bcrypt.compare(input.apass, admin.apass);
+            if (!validPass) return {
+                success: false,
+                message: "Invalid Password",
+                aid: null
+            };
+
+            return {
+                success: true,
+                message: "Right credentials",
+                aid: admin.aid
+            };
+        },
+        formGroups: async (_: any, { input }: any) => {
+            try {
+                // Deleting already created teams (if button clicked again)
+                const existingTeams = await prisma.teams.findMany({
+                    where: { cid: parseInt(input.cid) }
+                });
+                if (existingTeams.length > 0) {
+                    await prisma.teampeople.deleteMany({
+                        where: {
+                            tid: {
+                                in: existingTeams.map(team => team.tid)
+                            }
+                        }
+                    });
+                    await prisma.teams.deleteMany({
+                        where: { cid: parseInt(input.cid) }
+                    });
+                }
+                const enrolledStudents = await prisma.enrolled.findMany({
+                    where: { cid: parseInt(input.cid) },
+                    include: { students: true }
+                });
+
+                if (enrolledStudents.length === 0) {
+                    return {
+                        success: false,
+                        message: "No students enrolled in this course",
+                        teamsCreated: 0
+                    };
+                }
+
+                const totalStudents = enrolledStudents.length;
+                const numberOfTeams = Math.ceil(totalStudents / input.gsize);
+
+                const teams: number[] = [];
+                const teamMembers: { tid: number; sid: number }[] = [];
+
+                for (let i = 0; i < numberOfTeams; i++) {
+                    const team = await prisma.teams.create({
+                        data: {
+                            cid: parseInt(input.cid),
+                            tname: `Team ${i + 1}`
+                        }
+                    });
+                    teams.push(team.tid);
+                }
+
+                // Member Assignment
+                enrolledStudents.forEach((enrollment, index) => {
+                    const teamIndex = index % numberOfTeams;
+                    const teamId = teams[teamIndex];
+                    if (teamId != undefined) {
+                        teamMembers.push({
+                            tid: teamId,
+                            sid: enrollment.sid
+                        });
+                    }
+                });
+
+                await prisma.teampeople.createMany({ data: teamMembers });
+
+                return {
+                    success: true,
+                    message: `Successfully created ${numberOfTeams} teams with ${totalStudents} students`,
+                    teamsCreated: numberOfTeams
+                };
+
+            } catch (error: any) {
+                console.error('Error forming groups:', error);
+                return {
+                    success: false,
+                    message: "Error forming groups: " + error.message,
+                    teamsCreated: 0
+                };
+            }
         }
     },
 

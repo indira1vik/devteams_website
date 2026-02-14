@@ -45,12 +45,19 @@ export const typeDefs = gql`
     type Team {
         tid: ID!
         course: Course!
+        tname: String!
         teampeople: [TeamPerson!]!
     }
     type TeamPerson {
         tpid: ID!
         student: Student!
         team: Team!
+    }
+    type Admin {
+        aid: ID!
+        aname: String!
+        aemail: String!
+        apass: String!
     }
 
     type StudentAuthResponse {
@@ -62,6 +69,16 @@ export const typeDefs = gql`
         success: Boolean!
         message: String!
         pid: ID
+    }
+    type AdminAuthResponse {
+    success: Boolean!
+    message: String!
+    aid: ID
+}
+    type FormGroupsResponse {
+        success: Boolean!
+        message: String!
+        teamsCreated: Int!
     }
 
     # INPUT TYPES
@@ -75,6 +92,11 @@ export const typeDefs = gql`
         pname: String!
         pemail: String!
         ppass: String!
+    }
+    input AdminInput {
+        aname: String!
+        aemail: String!
+        apass: String!
     }
     input CourseInput {
         ctitle: String!
@@ -109,12 +131,21 @@ export const typeDefs = gql`
         pemail: String!
         ppass: String!
     }
+    input AdminLogin {
+        aemail: String!
+        apass: String!
+    }
+    input FormingGroupInput {
+        cid: ID!
+        gsize: Int!
+    }
 
 
     # QUERY & MUTATION
     type Query {
         getAllStudents: [Student!]!
         getAllProfessors: [Professor!]!
+        getAllAdmins: [Admin!]!
         getAllCourses: [Course!]!
         getAllEnrolled: [Enroll!]!
         getAllSkillSets: [SkillSet!]!
@@ -124,6 +155,7 @@ export const typeDefs = gql`
 
         getOneStudent(sid: ID!): Student
         getOneProfessor(pid: ID!): Professor
+        getOneAdmin(aid: ID!): Admin
         getOneCourse(cid: ID!): Course
         getOneEnrolled(eid: ID!): Enroll
         getOneSkillSet(skid: ID!): SkillSet
@@ -134,6 +166,7 @@ export const typeDefs = gql`
     type Mutation {
         addStudent(input: StudentInput!): Student!
         addProfessor(input: ProfessorInput!): Professor!
+        addAdmin(input: AdminInput!): Admin!
         addCourse(input: CourseInput!): Course!
         enrollStudent(input: EnrollInput): Enroll!
         addOneTeam(input: TeamInput): Team!
@@ -143,5 +176,8 @@ export const typeDefs = gql`
 
         loginStudent(input: StudentLogin!): StudentAuthResponse
         loginProfessor(input: ProfessorLogin): ProfessorAuthResponse
+        loginAdmin(input: AdminLogin): AdminAuthResponse
+
+        formGroups(input: FormingGroupInput): FormGroupsResponse!
     }
 `;

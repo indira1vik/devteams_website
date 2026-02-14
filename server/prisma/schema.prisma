@@ -77,6 +77,14 @@ model teampeople {
 model teams {
   tid        Int          @id @default(autoincrement())
   cid        Int
+  tname      String?      @db.VarChar(50)
   teampeople teampeople[]
   courses    courses      @relation(fields: [cid], references: [cid], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model admins {
+  aid    Int    @id @default(autoincrement())
+  aname  String @db.VarChar(100)
+  aemail String @unique @db.VarChar(100)
+  apass  String @db.VarChar(100)
 }

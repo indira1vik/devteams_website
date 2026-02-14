@@ -31,9 +31,19 @@ const PROFESSOR_LOGIN = gql`
         }
     }
 `;
+const ADMIN_LOGIN = gql`
+    mutation Arguments($input: AdminLogin!) {
+        loginAdmin(input: $input) {
+            success
+            message
+            aid
+        }
+    }
+`;
 
 const { mutate: studentLoginQuery } = useMutation(STUDENT_LOGIN);
 const { mutate: professorLoginQuery } = useMutation(PROFESSOR_LOGIN);
+const { mutate: adminLoginQuery } = useMutation(ADMIN_LOGIN);
 
 async function checkLogin() {
     if (email.value === "" || password.value === "") {
@@ -70,6 +80,22 @@ async function checkLogin() {
                 router.push({
                     name: 'professor',
                     params: { pid: data.pid }
+                });
+            } else {
+                alert(data.message);
+            }
+        } else if (role.value === 'admin') {
+            const adminLoginResponse = await adminLoginQuery({
+                input: {
+                    aemail: email.value.toString(),
+                    apass: password.value.toString()
+                }
+            });
+            const data = adminLoginResponse?.data.loginAdmin;
+            if (data.success) {
+                router.push({
+                    name: 'admin',
+                    params: { aid: data.aid }
                 });
             } else {
                 alert(data.message);

@@ -4,6 +4,7 @@ import Login from "../views/Login.vue";
 import Student from '../views/Student.vue';
 import Professor from '../views/Professor.vue';
 import Course from '../views/Course.vue';
+import Admin from '../views/Admin.vue';
 
 const routes = [
   {
@@ -30,6 +31,11 @@ const routes = [
     path: "/course/:cid",
     name: "course",
     component: Course
+  },
+  {
+    path: "/admin/:aid",
+    name: "admin",
+    component: Admin
   }
 ]
 
