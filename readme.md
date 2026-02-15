@@ -15,7 +15,7 @@ A simple team formation website for professors and students.
 - And change the DATABASE URL in the `.env` in the server folder for setting up the localhost
 
 ## Commands for Docker
-- Open project and enter `docker compose -d --build`
+- Open project and enter `docker compose up -d --build`
 
 ## Sample Login Creds
 Student Login\
