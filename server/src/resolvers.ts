@@ -197,11 +197,12 @@ export const resolvers = {
                         where: { cid: parseInt(input.cid) }
                     });
                 }
+
+                // Get Students List and Check Length
                 const enrolledStudents = await prisma.enrolled.findMany({
                     where: { cid: parseInt(input.cid) },
                     include: { students: true }
                 });
-
                 if (enrolledStudents.length === 0) {
                     return {
                         success: false,
@@ -210,12 +211,29 @@ export const resolvers = {
                     };
                 }
 
+                // Create Skill Average Student List
+                const eachStudentSkillAvg: { sid: number, avg: number }[] = [];
+                for (const eachStudent of enrolledStudents) {
+                    const theirSkills = await prisma.studentskills.findMany({
+                        where: {
+                            sid: eachStudent.sid
+                        }
+                    });
+                    let totalSkillVal = 0;
+                    theirSkills.forEach((eachSkill) => {
+                        if (eachSkill.levels != null) {
+                            totalSkillVal += eachSkill.levels;
+                        }
+                    });
+                    const avgVal = theirSkills.length > 0 ? totalSkillVal / theirSkills.length : 0;
+                    eachStudentSkillAvg.push({sid: eachStudent.sid, avg: avgVal});
+                };
+                eachStudentSkillAvg.sort((a, b) => b.avg - a.avg);
+
+                // Create Teams
                 const totalStudents = enrolledStudents.length;
                 const numberOfTeams = Math.ceil(totalStudents / input.gsize);
-
-                const teams: number[] = [];
-                const teamMembers: { tid: number; sid: number }[] = [];
-
+                const teamsID: number[] = [];
                 for (let i = 0; i < numberOfTeams; i++) {
                     const team = await prisma.teams.create({
                         data: {
@@ -223,21 +241,21 @@ export const resolvers = {
                             tname: `Team ${i + 1}`
                         }
                     });
-                    teams.push(team.tid);
+                    teamsID.push(team.tid);
                 }
 
-                // Member Assignment
-                enrolledStudents.forEach((enrollment, index) => {
+                // Add Members to Teams
+                const teamMembers: { tid: number; sid: number }[] = [];
+                eachStudentSkillAvg.forEach((oneStudent, index) => {
                     const teamIndex = index % numberOfTeams;
-                    const teamId = teams[teamIndex];
+                    const teamId = teamsID[teamIndex];
                     if (teamId != undefined) {
                         teamMembers.push({
                             tid: teamId,
-                            sid: enrollment.sid
+                            sid: oneStudent.sid
                         });
                     }
                 });
-
                 await prisma.teampeople.createMany({ data: teamMembers });
 
                 return {
