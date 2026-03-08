@@ -3,6 +3,108 @@ import * as bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+// --- K-Means Helpers ---
+function euclideanDistSq(a: number[], b: number[]): number {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) sum += (a[i] - b[i]) ** 2;
+    return sum;
+}
+
+function kMeansPlusPlusInit(vectors: number[][], k: number): number[][] {
+    const centroids: number[][] = [];
+    const n = vectors.length;
+    const dims = vectors[0].length;
+
+    // First centroid chosen randomly
+    centroids.push([...vectors[Math.floor(Math.random() * n)]]);
+
+    for (let c = 1; c < k; c++) {
+        const distances = vectors.map(v => {
+            let minDist = Infinity;
+            for (const centroid of centroids) {
+                minDist = Math.min(minDist, euclideanDistSq(v, centroid));
+            }
+            return minDist;
+        });
+
+        const totalDist = distances.reduce((a, b) => a + b, 0);
+        if (totalDist === 0) {
+            centroids.push([...vectors[Math.floor(Math.random() * n)]]);
+            continue;
+        }
+
+        let r = Math.random() * totalDist;
+        let picked = n - 1;
+        for (let i = 0; i < n; i++) {
+            r -= distances[i];
+            if (r <= 0) { picked = i; break; }
+        }
+        centroids.push([...vectors[picked]]);
+    }
+    return centroids;
+}
+
+function runKMeans(vectors: number[][], k: number, maxIter = 100): { centroids: number[][]; assignments: number[] } {
+    const n = vectors.length;
+    const dims = vectors[0].length;
+    const centroids = kMeansPlusPlusInit(vectors, k);
+    let assignments = new Array(n).fill(0);
+
+    for (let iter = 0; iter < maxIter; iter++) {
+        // Assign to nearest centroid
+        const newAssignments = vectors.map(v => {
+            let minDist = Infinity;
+            let best = 0;
+            for (let c = 0; c < k; c++) {
+                const d = euclideanDistSq(v, centroids[c]);
+                if (d < minDist) { minDist = d; best = c; }
+            }
+            return best;
+        });
+
+        const converged = newAssignments.every((a, i) => a === assignments[i]);
+        assignments = newAssignments;
+        if (converged) break;
+
+        // Recompute centroids
+        for (let c = 0; c < k; c++) {
+            const members = vectors.filter((_, i) => assignments[i] === c);
+            if (members.length > 0) {
+                for (let d = 0; d < dims; d++) {
+                    centroids[c][d] = members.reduce((s, m) => s + m[d], 0) / members.length;
+                }
+            }
+        }
+    }
+    return { centroids, assignments };
+}
+
+/** Balanced assignment: respects max cluster size so teams stay even. */
+function balancedAssign(vectors: number[][], centroids: number[][], maxPerCluster: number): number[] {
+    const n = vectors.length;
+    const k = centroids.length;
+
+    // Build (studentIdx, clusterIdx, distance) triples sorted by distance
+    const pairs: { si: number; ci: number; dist: number }[] = [];
+    for (let si = 0; si < n; si++) {
+        for (let ci = 0; ci < k; ci++) {
+            pairs.push({ si, ci, dist: euclideanDistSq(vectors[si], centroids[ci]) });
+        }
+    }
+    pairs.sort((a, b) => a.dist - b.dist);
+
+    const assignments = new Array(n).fill(-1);
+    const clusterSizes = new Array(k).fill(0);
+
+    for (const { si, ci } of pairs) {
+        if (assignments[si] !== -1) continue;          // student already assigned
+        if (clusterSizes[ci] >= maxPerCluster) continue; // cluster full
+        assignments[si] = ci;
+        clusterSizes[ci]++;
+    }
+    return assignments;
+}
+
 export const resolvers = {
     Query: {
         getAllStudents: () => prisma.students.findMany(),
@@ -198,7 +300,7 @@ export const resolvers = {
                     });
                 }
 
-                // Get Students List and Check Length
+                // Get enrolled students
                 const enrolledStudents = await prisma.enrolled.findMany({
                     where: { cid: parseInt(input.cid) },
                     include: { students: true }
@@ -211,28 +313,40 @@ export const resolvers = {
                     };
                 }
 
-                // Create Skill Average Student List
-                const eachStudentSkillAvg: { sid: number, avg: number }[] = [];
-                for (const eachStudent of enrolledStudents) {
-                    const theirSkills = await prisma.studentskills.findMany({
-                        where: {
-                            sid: eachStudent.sid
-                        }
-                    });
-                    let totalSkillVal = 0;
-                    theirSkills.forEach((eachSkill) => {
-                        if (eachSkill.levels != null) {
-                            totalSkillVal += eachSkill.levels;
-                        }
-                    });
-                    const avgVal = theirSkills.length > 0 ? totalSkillVal / theirSkills.length : 0;
-                    eachStudentSkillAvg.push({sid: eachStudent.sid, avg: avgVal});
-                };
-                eachStudentSkillAvg.sort((a, b) => b.avg - a.avg);
-
-                // Create Teams
                 const totalStudents = enrolledStudents.length;
                 const numberOfTeams = Math.ceil(totalStudents / input.gsize);
+
+                // Get all skill dimensions to build feature vectors
+                const allSkills = await prisma.skillset.findMany();
+                const skillIds = allSkills.map(s => s.skid).sort((a, b) => a - b);
+
+                // Build a skill-level vector for every student
+                const studentData: { sid: number; vector: number[] }[] = [];
+                for (const es of enrolledStudents) {
+                    const skills = await prisma.studentskills.findMany({
+                        where: { sid: es.sid }
+                    });
+                    const vector = skillIds.map(skid => {
+                        const found = skills.find(s => s.skid === skid);
+                        return found?.levels ?? 0;
+                    });
+                    studentData.push({ sid: es.sid, vector });
+                }
+
+                // Determine cluster assignments
+                let assignments: number[];
+                if (numberOfTeams <= 1 || skillIds.length === 0) {
+                    // Trivial case — single team or no skills defined
+                    assignments = new Array(totalStudents).fill(0);
+                } else {
+                    // Run k-means then balance team sizes
+                    const vectors = studentData.map(s => s.vector);
+                    const { centroids } = runKMeans(vectors, numberOfTeams);
+                    const maxPerCluster = Math.ceil(totalStudents / numberOfTeams);
+                    assignments = balancedAssign(vectors, centroids, maxPerCluster);
+                }
+
+                // Create team rows
                 const teamsID: number[] = [];
                 for (let i = 0; i < numberOfTeams; i++) {
                     const team = await prisma.teams.create({
@@ -244,23 +358,19 @@ export const resolvers = {
                     teamsID.push(team.tid);
                 }
 
-                // Add Members to Teams
+                // Assign students to teams based on k-means clusters
                 const teamMembers: { tid: number; sid: number }[] = [];
-                eachStudentSkillAvg.forEach((oneStudent, index) => {
-                    const teamIndex = index % numberOfTeams;
-                    const teamId = teamsID[teamIndex];
-                    if (teamId != undefined) {
-                        teamMembers.push({
-                            tid: teamId,
-                            sid: oneStudent.sid
-                        });
+                studentData.forEach((s, idx) => {
+                    const teamId = teamsID[assignments[idx]];
+                    if (teamId !== undefined) {
+                        teamMembers.push({ tid: teamId, sid: s.sid });
                     }
                 });
                 await prisma.teampeople.createMany({ data: teamMembers });
 
                 return {
                     success: true,
-                    message: `Successfully created ${numberOfTeams} teams with ${totalStudents} students`,
+                    message: `Successfully created ${numberOfTeams} teams with ${totalStudents} students using k-means clustering`,
                     teamsCreated: numberOfTeams
                 };
 
